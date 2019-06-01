@@ -105,7 +105,7 @@ while True:
 		intensity = 0
 		random.shuffle(arr)
 		for i in range(len(arr)):
-			arr[i][2] = random.random() * brightness_multiplier
+			arr[i][2] = random.random()
 	
 	# Display intensity
 	
@@ -120,5 +120,5 @@ while True:
 	
 	for i in range(len(arr)):
 		file = open('/sys/class/leds/' + arr[i][0] + '/brightness', 'w')
-		file.write(str(max(int(math.ceil((intensity * arr[i][1] - (i * entry_barrier)) * arr[i][2])), 0)))
+		file.write(str(max(int(math.ceil((intensity * arr[i][1] - (i * entry_barrier)) * arr[i][2] * brightness_multiplier)), 0)))
 		file.close()
