@@ -19,7 +19,7 @@ stream = pyaudio.Stream(pa_manager, RATE, CHANNELS, FORMAT, input=True, frames_p
 
 display_width = 100
 average_samples = 100
-entry_barrier = 0.01
+entry_barrier = 0.1
 brightness_multiplier = 10
 
 volume_list = array.array('f')
@@ -120,5 +120,5 @@ while True:
 	
 	for i in range(len(arr)):
 		file = open('/sys/class/leds/' + arr[i][0] + '/brightness', 'w')
-		file.write(str(max(int(math.ceil((intensity * arr[i][1] - (i * entry_barrier)) * arr[i][2] * brightness_multiplier)), 0)))
+		file.write(str(max(int(math.ceil((intensity * arr[i][1] - (i * entry_barrier / len(arr))) * arr[i][2] * brightness_multiplier)), 0)))
 		file.close()
