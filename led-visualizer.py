@@ -20,6 +20,7 @@ stream = pyaudio.Stream(pa_manager, RATE, CHANNELS, FORMAT, input=True, frames_p
 display_width = 100
 average_samples = 100
 entry_barrier = 0.01
+brightness_multiplier = 10
 
 volume_list = array.array('f')
 
@@ -33,7 +34,7 @@ pre_arr = []
 
 for i in os.listdir('/sys/class/leds'):
 	file = open('/sys/class/leds/' + i + '/max_brightness', 'r')
-	pre_arr.append([i, int(file.read())])
+	pre_arr.append([i, int(file.read()), 0])
 	file.close()
 
 pre_arr.sort()
@@ -103,6 +104,8 @@ while True:
 	else:
 		intensity = 0
 		random.shuffle(arr)
+		for i in range(len(arr)):
+			arr[i][2] = random.random() * brightness_multiplier
 	
 	# Display intensity
 	
@@ -117,5 +120,5 @@ while True:
 	
 	for i in range(len(arr)):
 		file = open('/sys/class/leds/' + arr[i][0] + '/brightness', 'w')
-		file.write(str(max(int(math.ceil((intensity * arr[i][1] - (i * entry_barrier)) * (i + 1))), 0)))
+		file.write(str(max(int(math.ceil((intensity * arr[i][1] - (i * entry_barrier)) * arr[i][2])), 0)))
 		file.close()
