@@ -9,19 +9,19 @@ import math
 
 CHANNELS = 1
 RATE = 48000
-CHUNK = 1024
+MS_PER_UPDATE = 20
 FORMAT = pyaudio.paFloat32
 
+CHUNK = math.ceil((MS_PER_UPDATE / 1000) * RATE)
 pa_manager = pyaudio.PyAudio()
 stream = pyaudio.Stream(pa_manager, RATE, CHANNELS, FORMAT, input=True, frames_per_buffer=CHUNK)
 
 # Initialize variables
 
+sample_time_sec = 2
 display_width = 100
-average_samples = 100
-entry_barrier = 0.1
-brightness_multiplier = 10
 
+average_samples = math.ceil((sample_time_sec * 1000) / 20)
 volume_list = array.array('f')
 
 first = True
@@ -72,7 +72,7 @@ while True:
 	
 	# Grab audio string and convert to array
 	
-	databin = stream.read(CHUNK)
+	databin = stream.read(CHUNK, exception_on_overflow = False)
 	data = array.array('f')
 	data.fromstring(databin)
 	
@@ -84,7 +84,6 @@ while True:
 	# Find current volume
 	
 	volume = numpy.mean(data)
-	volume = volume ** 2
 	
 	# Make list of last n volumes
 	
@@ -97,28 +96,26 @@ while True:
 	
 	average = numpy.mean(volume_list)
 	
-	# Increase intensity if volume is above average
+	# Set intensity if volume is above average
 	
 	if volume > average:
-		intensity = volume-average
+		intensity = (volume - average) / (average)
 	else:
 		intensity = 0
 		random.shuffle(arr)
-		for i in range(len(arr)):
-			arr[i][2] = random.random()
 	
 	# Display intensity
 	
-	print('[', end='')
-	for i in range(math.ceil(intensity * display_width)):
-		print('|', end='')
-	for i in range(display_width - math.ceil(intensity * display_width)):
-		print(' ', end='')
-	print(']')
+	#print('[', end='')
+	#for i in range(math.ceil(min(intensity, 1) * display_width)):
+	#	print('|', end='')
+	#for i in range(display_width - math.ceil(min(intensity, 1) * display_width)):
+	#	print(' ', end='')
+	#print(']')
 	
 	# Set led brightness to intensity
 	
 	for i in range(len(arr)):
 		file = open('/sys/class/leds/' + arr[i][0] + '/brightness', 'w')
-		file.write(str(max(int(math.ceil((intensity * arr[i][1] - (i * entry_barrier / len(arr))) * arr[i][2] * brightness_multiplier)), 0)))
+		file.write(str(min(max(int(math.ceil((1 / (1 - (i / len(arr)))) * (intensity - (i / len(arr))) * arr[i][1])), 0), arr[i][1])))
 		file.close()
