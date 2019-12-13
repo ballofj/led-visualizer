@@ -1,7 +1,6 @@
 import pyaudio
 import array
 import numpy
-import os
 import random
 import math
 
@@ -18,53 +17,41 @@ stream = pyaudio.Stream(pa_manager, RATE, CHANNELS, FORMAT, input=True, frames_p
 
 # Initialize variables
 
-sample_time_sec = 2
+sample_time_sec = 60
 display_width = 100
 
 average_samples = math.ceil((sample_time_sec * 1000) / 20)
 volume_list = array.array('f')
 
-first = True
 picking = True
 
+out_arr = []
 arr = []
-pre_arr = []
-
-# Get led names and max brightness
-
-for i in os.listdir('/sys/class/leds'):
-	file = open('/sys/class/leds/' + i + '/max_brightness', 'r')
-	pre_arr.append([i, int(file.read()), 0])
-	file.close()
-
-pre_arr.sort()
-
-# User select leds
 
 while picking:
-	
-	print('\nSelected leds:')
+	print('\nSelected outputs:')
 	for i in range(len(arr)):
-		print(arr[i][0])
+		print('Path: ' + out_arr[i][0] + ' | Maximum: ' + str(arr[i][1]))
 	
-	print('\nOptions:')
-	for i in range(len(pre_arr)):
-		print(pre_arr[i][0] + ': ' + str(i))
-	print("\nType led number and put 'done' when finished")
+	print("\nEnter file path and enter 'done' when finished")
 	
-	inputled = input()
+	inputled = str(input())
 	
 	if inputled == 'done':
 		picking = False
 	else:
+		print("\nEnter maximum value of " + inputled + " (Integer)")
 		
-		file = open('/sys/class/leds/' + pre_arr[int(inputled)][0] + '/brightness', 'w')
-		file.write(str(pre_arr[int(inputled)][1]))
+		maxbright = int(input())
+		
+		out_arr.append([inputled, maxbright])
+		
+		file = open(inputled, 'w')
+		file.write(str(maxbright))
 		file.close()
-		
-		arr.append(pre_arr[int(inputled)])
-		
-		pre_arr.pop(int(inputled))
+
+for i in range(len(out_arr)):
+	arr.append(i)
 
 # Main loop
 
@@ -84,6 +71,11 @@ while True:
 	# Find current volume
 	
 	volume = numpy.mean(data)
+	
+	# Discard volume data during silence
+	
+	if volume == 0:
+		volume_list = array.array('f')
 	
 	# Make list of last n volumes
 	
@@ -115,7 +107,9 @@ while True:
 	
 	# Set led brightness to intensity
 	
-	for i in range(len(arr)):
-		file = open('/sys/class/leds/' + arr[i][0] + '/brightness', 'w')
-		file.write(str(min(max(int(math.ceil((1 / (1 - (i / len(arr)))) * (intensity - (i / len(arr))) * arr[i][1])), 0), arr[i][1])))
+	
+	for b in range(len(out_arr)):
+		i = arr[b]
+		file = open(out_arr[b][0], 'w')
+		file.write(str(min(max(int(math.ceil((1 / (1 - (i / len(arr)))) * (intensity - (i / len(arr))) * out_arr[i][1])), 0), out_arr[i][1])))
 		file.close()
